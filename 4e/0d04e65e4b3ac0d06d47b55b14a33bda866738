@@ -1,0 +1,84 @@
+gateway.sh
+  s_2273f89fe7c0f0::t_37cb67de1a2a6c 1-160
+shared/otel-collector/compose.yaml
+  s_2273f89fe7c0f0::t_b076d615cbeb0b 1-9
+litellm/canary_guardrail.py
+  s_2273f89fe7c0f0::t_e600fcf2d68adb 1-36
+bifrost/plugins/canary/main.go
+  s_2273f89fe7c0f0::t_d856fb3572fe20 1-5,7-58,60-68
+  s_2273f89fe7c0f0::t_60f96324bfc81a 6
+  s_2273f89fe7c0f0::t_890af55a64d5fa 59
+README.md
+  s_2273f89fe7c0f0::t_19a924375f33bd 1-111
+agentgateway/config.yaml
+  s_2273f89fe7c0f0::t_4396aca5e1d927 27-40
+  s_2273f89fe7c0f0::t_cd13422b3fbe42 1-26,41-51
+.env.example
+  s_2273f89fe7c0f0::t_945dfad951a4fb 1-18
+  s_2273f89fe7c0f0::t_ed68d90a0827ca 19
+agentgateway/compose.yaml
+  s_2273f89fe7c0f0::t_6ab2282e5647e0 1-39
+agent-router/compose.yaml
+  s_2273f89fe7c0f0::t_d8afea4691da84 1-26
+agent-router/smoke.env
+  s_2273f89fe7c0f0::t_64fbedce84baa9 1-6
+agentgateway/smoke.env
+  s_2273f89fe7c0f0::t_ab2f207726c3f2 1-5
+litellm/compose.yaml
+  s_2273f89fe7c0f0::t_218cf3be6aa8b2 1-41
+agentgateway/README.md
+  s_2273f89fe7c0f0::t_0fb278ce1a6762 1-40
+shared/otel-collector/config.yaml
+  s_2273f89fe7c0f0::t_c3573c2e3e6e3d 1-26
+litellm/init.sh
+  s_2273f89fe7c0f0::t_941c40f4276848 1-14
+.gitignore
+  s_2273f89fe7c0f0::t_f727ce97e2718e 1-5
+  s_2273f89fe7c0f0::t_2faff398e01b15 6
+bifrost/README.md
+  s_2273f89fe7c0f0::t_e791d118e407fa 1-53
+agent-router/README.md
+  s_2273f89fe7c0f0::t_05238a718a3035 1-57
+bifrost/smoke.env
+  s_2273f89fe7c0f0::t_bd29d5d1444906 1-5
+litellm/smoke.env
+  s_2273f89fe7c0f0::t_66a7771ce490b1 1-5
+portkey/smoke.env
+  s_2273f89fe7c0f0::t_af83cc9bb32d38 1-15
+litellm/README.md
+  s_2273f89fe7c0f0::t_198f1646dda29c 1-41
+portkey/compose.yaml
+  s_2273f89fe7c0f0::t_d045642c5594f7 1-10
+portkey/README.md
+  s_2273f89fe7c0f0::t_aeba21d9a7a095 1-41
+bifrost/compose.yaml
+  s_2273f89fe7c0f0::t_90e4b9a056ad93 1-19
+agentgateway/ratelimit/config.yaml
+  s_2273f89fe7c0f0::t_e3ce6a6c99d880 1-7
+bifrost/config.json
+  s_2273f89fe7c0f0::t_70cfb26c561030 1-70
+agent-router/config.yaml
+  s_2273f89fe7c0f0::t_039b9dd5c85153 1-150
+litellm/config.yaml
+  s_2273f89fe7c0f0::t_7d2cbf2652b42c 1-25
+bifrost/plugins/canary/go.mod
+  s_2273f89fe7c0f0::t_e406781c4a514f 1-32
+bifrost/plugins/canary/go.sum
+  s_2273f89fe7c0f0::t_1e970713bf136f 1-86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4e0d04e65e4b3ac0d06d47b55b14a33bda866738",
+  "prompts": {},
+  "sessions": {
+    "s_2273f89fe7c0f0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f634768b-aa61-4d55-949b-36eed786d682",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "David Cooper <cooper@unit21.ai>"
+    }
+  }
+}
