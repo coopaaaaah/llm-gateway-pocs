@@ -1,0 +1,7 @@
+domain: llm-gateway-pocs
+descriptors:
+  - key: user_id
+    value: limited
+    rate_limit:
+      unit: minute
+      requests_per_unit: 3

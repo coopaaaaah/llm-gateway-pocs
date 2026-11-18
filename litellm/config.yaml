@@ -1,0 +1,25 @@
+model_list:
+  - model_name: sonnet
+    litellm_params:
+      model: os.environ/SONNET_LITELLM_MODEL
+      aws_region_name: os.environ/AWS_REGION
+  - model_name: haiku
+    litellm_params:
+      model: os.environ/HAIKU_LITELLM_MODEL
+      aws_region_name: os.environ/AWS_REGION
+
+guardrails:
+  - guardrail_name: canary
+    litellm_params:
+      guardrail: canary_guardrail.CanaryGuardrail
+      mode: [pre_call, post_call]
+      default_on: true
+
+litellm_settings:
+  callbacks: ["otel"]
+  drop_params: true
+  request_timeout: 600
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL

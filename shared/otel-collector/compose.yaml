@@ -1,0 +1,9 @@
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.165.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./config.yaml:/etc/otelcol/config.yaml:ro
+    environment:
+      HONEYCOMB_API_KEY: ${HONEYCOMB_API_KEY:-}
+      HONEYCOMB_DATASET: ${HONEYCOMB_DATASET:-llm-gateway-pocs}

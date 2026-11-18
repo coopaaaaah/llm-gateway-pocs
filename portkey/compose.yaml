@@ -1,0 +1,10 @@
+include:
+  - ../shared/otel-collector/compose.yaml
+
+services:
+  portkey:
+    image: portkeyai/gateway:${PORTKEY_IMAGE_TAG:-1.15.2}
+    ports:
+      - "8787:8787"
+    depends_on:
+      - otel-collector

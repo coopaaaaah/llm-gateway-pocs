@@ -1,0 +1,150 @@
+# Standalone `aigw run` config. aigw substitutes ${VAR} from its environment at load time.
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: aigw-run
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: aigw-run
+  namespace: default
+spec:
+  gatewayClassName: aigw-run
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 1975
+  infrastructure:
+    parametersRef:
+      group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+      name: envoy-ai-gateway
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: envoy-ai-gateway
+  namespace: default
+spec:
+  logging:
+    level:
+      default: error
+---
+apiVersion: aigateway.envoyproxy.io/v1beta1
+kind: AIGatewayRoute
+metadata:
+  name: aigw-run
+  namespace: default
+spec:
+  parentRefs:
+    - name: aigw-run
+      kind: Gateway
+      group: gateway.networking.k8s.io
+  rules:
+    - matches:
+        - headers:
+            - type: Exact
+              name: x-ai-eg-model
+              value: ${SONNET_MODEL_ID}
+        - headers:
+            - type: Exact
+              name: x-ai-eg-model
+              value: ${HAIKU_MODEL_ID}
+      backendRefs:
+        - name: bedrock
+          namespace: default
+      timeouts:
+        # Long enough to prove streaming past a 55s idle timeout.
+        request: 600s
+  llmRequestCosts:
+    - metadataKey: llm_input_token
+      type: InputToken
+    - metadataKey: llm_output_token
+      type: OutputToken
+---
+apiVersion: aigateway.envoyproxy.io/v1beta1
+kind: AIServiceBackend
+metadata:
+  name: bedrock
+  namespace: default
+spec:
+  timeouts:
+    request: 600s
+  schema:
+    name: AWSBedrock
+  backendRef:
+    name: bedrock
+    kind: Backend
+    group: gateway.envoyproxy.io
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: Backend
+metadata:
+  name: bedrock
+  namespace: default
+spec:
+  endpoints:
+    - fqdn:
+        hostname: bedrock-runtime.${AWS_REGION}.amazonaws.com
+        port: 443
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: bedrock-tls
+  namespace: default
+spec:
+  targetRefs:
+    - group: gateway.envoyproxy.io
+      kind: Backend
+      name: bedrock
+  validation:
+    wellKnownCACertificates: System
+    hostname: bedrock-runtime.${AWS_REGION}.amazonaws.com
+---
+apiVersion: aigateway.envoyproxy.io/v1beta1
+kind: BackendSecurityPolicy
+metadata:
+  name: bedrock-credentials
+  namespace: default
+spec:
+  targetRefs:
+    - group: aigateway.envoyproxy.io
+      kind: AIServiceBackend
+      name: bedrock
+  type: AWSCredentials
+  awsCredentials:
+    region: ${AWS_REGION}
+    credentialsFile:
+      secretRef:
+        name: bedrock-credentials
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bedrock-credentials
+  namespace: default
+type: Opaque
+stringData:
+  credentials: |
+    [default]
+    aws_access_key_id = ${AWS_ACCESS_KEY_ID}
+    aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+    aws_session_token = ${AWS_SESSION_TOKEN}
+---
+# Envoy Gateway's default 32KiB buffer is too small for long rule-writing prompts.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: client-buffer-limit
+  namespace: default
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: aigw-run
+  connection:
+    bufferLimit: 50Mi

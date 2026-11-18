@@ -1,0 +1,39 @@
+include:
+  - ../shared/otel-collector/compose.yaml
+
+services:
+  agentgateway:
+    image: cr.agentgateway.dev/agentgateway:${AGENTGATEWAY_IMAGE_TAG:-v1.7.0}
+    command: ["-f", "/config.yaml"]
+    volumes:
+      - ./config.yaml:/config.yaml:ro
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?run ./gateway.sh creds first}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?run ./gateway.sh creds first}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      AWS_REGION: ${AWS_REGION:-us-west-2}
+    ports:
+      # Host 4001 so it can run next to LiteLLM on 4000.
+      - "4001:4000"
+    depends_on:
+      - otel-collector
+      - ratelimit
+
+  ratelimit:
+    image: envoyproxy/ratelimit:${RATELIMIT_IMAGE_TAG:-3dfe2f9a}
+    command: ["/bin/ratelimit"]
+    environment:
+      USE_STATSD: "false"
+      LOG_LEVEL: debug
+      REDIS_SOCKET_TYPE: tcp
+      REDIS_URL: redis:6379
+      RUNTIME_ROOT: /data
+      RUNTIME_SUBDIRECTORY: ratelimit
+      RUNTIME_WATCH_ROOT: "false"
+    volumes:
+      - ./ratelimit:/data/ratelimit/config:ro
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine

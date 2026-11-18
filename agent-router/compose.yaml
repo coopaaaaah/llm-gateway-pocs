@@ -1,0 +1,26 @@
+include:
+  - ../shared/otel-collector/compose.yaml
+
+services:
+  aigw:
+    image: envoyproxy/ai-gateway-cli:${AGENT_ROUTER_IMAGE_TAG:-v1.3.0}
+    command: ["run", "/etc/aigw/config.yaml"]
+    volumes:
+      - ./config.yaml:/etc/aigw/config.yaml:ro
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?run ./gateway.sh creds first}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?run ./gateway.sh creds first}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      AWS_REGION: ${AWS_REGION:-us-west-2}
+      SONNET_MODEL_ID: ${SONNET_MODEL_ID}
+      HAIKU_MODEL_ID: ${HAIKU_MODEL_ID}
+      OTEL_SERVICE_NAME: agent-router-poc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      AI_GATEWAY_TRACING_SEMCONV: gen_ai
+    ports:
+      - "1975:1975"
+      - "1064:1064"
+    depends_on:
+      - otel-collector

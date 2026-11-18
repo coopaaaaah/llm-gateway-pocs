@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+# Region, model IDs, keys and the canary are literal here; keep them in sync with .env.
+
+frontendPolicies:
+  tracing:
+    host: otel-collector:4317
+    randomSampling: true
+
+llm:
+  policies:
+    apiKey:
+      mode: strict
+      keys:
+        - key: sk-agw-poc
+          metadata:
+            user: poc
+        - key: sk-agw-poc-limited-3rpm
+          metadata:
+            user: limited
+    remoteRateLimit:
+      host: ratelimit:8081
+      domain: llm-gateway-pocs
+      descriptors:
+        - entries:
+            - key: user_id
+              value: apiKey.user
+    guardrails:
+      request:
+        - regex:
+            action: reject
+            rules:
+              - pattern: GATEWAY-POC-GUARDRAIL-CANARY
+          rejection:
+            status: 400
+            body: '{"error":"guardrail: canary found in request"}'
+      response:
+        - regex:
+            action: reject
+            rules:
+              - pattern: GATEWAY-POC-GUARDRAIL-CANARY
+  models:
+    - name: sonnet
+      provider: bedrock
+      params:
+        awsRegion: us-west-2
+        model: us.anthropic.claude-sonnet-5
+    - name: haiku
+      provider: bedrock
+      params:
+        awsRegion: us-west-2
+        model: us.anthropic.claude-haiku-4-5-20251001-v1:0

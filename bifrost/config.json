@@ -1,0 +1,70 @@
+{
+  "$schema": "https://www.getbifrost.ai/schema",
+  "client": {
+    "enforce_auth_on_inference": true
+  },
+  "providers": {
+    "bedrock": {
+      "keys": [
+        {
+          "name": "bedrock-poc",
+          "value": "",
+          "models": ["*"],
+          "weight": 1.0,
+          "bedrock_key_config": {
+            "region": "env.AWS_REGION",
+            "access_key": "env.AWS_ACCESS_KEY_ID",
+            "secret_key": "env.AWS_SECRET_ACCESS_KEY",
+            "session_token": "env.AWS_SESSION_TOKEN"
+          },
+          "aliases": {
+            "sonnet": "us.anthropic.claude-sonnet-5",
+            "haiku": "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+          }
+        }
+      ]
+    }
+  },
+  "governance": {
+    "rate_limits": [
+      {
+        "id": "rl-poc-limited",
+        "request_max_limit": 3,
+        "request_reset_duration": "1m"
+      }
+    ],
+    "virtual_keys": [
+      {
+        "id": "vk-poc",
+        "name": "poc",
+        "value": "env.BIFROST_VIRTUAL_KEY",
+        "is_active": true,
+        "provider_configs": [
+          { "provider": "bedrock", "allowed_models": ["*"], "key_ids": ["*"], "weight": 1 }
+        ]
+      },
+      {
+        "id": "vk-poc-limited",
+        "name": "poc-limited",
+        "value": "env.BIFROST_LIMITED_KEY",
+        "is_active": true,
+        "rate_limit_id": "rl-poc-limited",
+        "provider_configs": [
+          { "provider": "bedrock", "allowed_models": ["*"], "key_ids": ["*"], "weight": 1 }
+        ]
+      }
+    ]
+  },
+  "plugins": [
+    {
+      "name": "otel",
+      "enabled": true,
+      "config": {
+        "collector_url": "http://otel-collector:4318",
+        "trace_type": "genai_extension",
+        "protocol": "http",
+        "service_name": "bifrost-poc"
+      }
+    }
+  ]
+}

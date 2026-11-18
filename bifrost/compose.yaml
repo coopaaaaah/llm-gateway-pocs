@@ -1,0 +1,19 @@
+include:
+  - ../shared/otel-collector/compose.yaml
+
+services:
+  bifrost:
+    image: maximhq/bifrost:${BIFROST_IMAGE_TAG:-v2.5.1}
+    volumes:
+      - ./config.json:/app/data/config.json:ro
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?run ./gateway.sh creds first}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?run ./gateway.sh creds first}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      AWS_REGION: ${AWS_REGION:-us-west-2}
+      BIFROST_VIRTUAL_KEY: ${BIFROST_VIRTUAL_KEY}
+      BIFROST_LIMITED_KEY: sk-bf-poc-limited-3rpm
+    ports:
+      - "8080:8080"
+    depends_on:
+      - otel-collector
