@@ -1,7 +1,57 @@
+# Envoy ratelimit rules. A descriptor key with no value matches any value and keeps a separate
+# counter per value (per model, per caller). Token limits are in Bedrock quota units (see the
+# cost expression in ../config.yaml).
+#
+# Model-wide numbers are an example staging allocation: 90% of the account quota.
+#   sonnet: 10,000 RPM, 6,000,000 TPM quota -> 9,000 RPM, 5,400,000 TPM
+#   haiku:  10,000 RPM, 5,000,000 TPM quota -> 9,000 RPM, 4,500,000 TPM
 domain: llm-gateway-pocs
 descriptors:
-  - key: user_id
-    value: limited
-    rate_limit:
-      unit: minute
-      requests_per_unit: 3
+  - key: limit
+    value: model-rpm
+    descriptors:
+      - key: model
+        value: sonnet
+        rate_limit: {unit: minute, requests_per_unit: 9000}
+      - key: model
+        value: haiku
+        rate_limit: {unit: minute, requests_per_unit: 9000}
+
+  - key: limit
+    value: model-tpm
+    descriptors:
+      - key: model
+        value: sonnet
+        rate_limit: {unit: minute, requests_per_unit: 5400000}
+      - key: model
+        value: haiku
+        rate_limit: {unit: minute, requests_per_unit: 4500000}
+
+  # Any caller may use up to half of a model's token budget. poc-tokens is a demo caller with
+  # a tiny budget for ./gateway.sh agentgateway ratelimit.
+  - key: limit
+    value: caller-tpm
+    descriptors:
+      - key: caller
+        value: poc-tokens
+        descriptors:
+          - key: model
+            value: haiku
+            rate_limit: {unit: minute, requests_per_unit: 100}
+      - key: caller
+        descriptors:
+          - key: model
+            value: sonnet
+            rate_limit: {unit: minute, requests_per_unit: 2700000}
+          - key: model
+            value: haiku
+            rate_limit: {unit: minute, requests_per_unit: 2250000}
+
+  # Demo caller for ./gateway.sh agentgateway ratelimit. Other callers have no request cap
+  # beyond the model-wide one.
+  - key: limit
+    value: caller-rpm
+    descriptors:
+      - key: caller
+        value: poc-limited
+        rate_limit: {unit: minute, requests_per_unit: 3}

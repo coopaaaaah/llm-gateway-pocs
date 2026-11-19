@@ -1,5 +1,6 @@
 include:
   - ../shared/otel-collector/compose.yaml
+  - ../shared/dev-issuer/compose.yaml
 
 services:
   agentgateway:
@@ -16,8 +17,12 @@ services:
       # Host 4001 so it can run next to LiteLLM on 4000.
       - "4001:4000"
     depends_on:
-      - otel-collector
-      - ratelimit
+      otel-collector:
+        condition: service_started
+      ratelimit:
+        condition: service_started
+      dev-issuer:
+        condition: service_healthy
 
   ratelimit:
     image: envoyproxy/ratelimit:${RATELIMIT_IMAGE_TAG:-3dfe2f9a}

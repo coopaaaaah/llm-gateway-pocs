@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=https://agentgateway.dev/schema/config
-# Region, model IDs, keys and the canary are literal here; keep them in sync with .env.
+# Region, model IDs and the canary are literal here; keep them in sync with .env.
 
 frontendPolicies:
   tracing:
@@ -8,22 +8,61 @@ frontendPolicies:
 
 llm:
   policies:
-    apiKey:
+    jwtAuth:
       mode: strict
-      keys:
-        - key: sk-agw-poc
-          metadata:
-            user: poc
-        - key: sk-agw-poc-limited-3rpm
-          metadata:
-            user: limited
+      issuer: auth-service
+      audiences: [ai-llm-gateway]
+      jwks:
+        # Local dev issuer. In a deployed environment, point this at the real auth service's
+        # /.well-known/jwks.json; nothing else in this block changes.
+        url: http://dev-issuer:8000/.well-known/jwks.json
+      jwtValidationOptions:
+        requiredClaims: [exp, iss, aud, sub]
+
+    # Limits live in ratelimit/config.yaml. Model-wide descriptors cap the shared Bedrock quota;
+    # caller descriptors (JWT sub) stop one service from using all of it.
     remoteRateLimit:
       host: ratelimit:8081
       domain: llm-gateway-pocs
+      failureMode: failOpen
       descriptors:
         - entries:
-            - key: user_id
-              value: apiKey.user
+            - key: limit
+              value: '"model-rpm"'
+            - key: model
+              value: llm.requestModel
+        - type: tokens
+          # Bedrock quota units: cache reads are free and output tokens burn down at
+          # 10x for Sonnet 5, 5x for Haiku 4.5. The int() casts are required (outputTokens is
+          # unsigned and CEL has no mixed arithmetic); a cost expression that errors silently
+          # skips the descriptor. requestModel is the Bedrock model ID once cost is evaluated.
+          cost: >-
+            int(llm.inputTokens)
+            - (has(llm.cachedInputTokens) ? int(llm.cachedInputTokens) : 0)
+            + int(llm.outputTokens) * (llm.requestModel.contains("sonnet") ? 10 : 5)
+          entries:
+            - key: limit
+              value: '"model-tpm"'
+            - key: model
+              value: llm.requestModel
+        - entries:
+            - key: limit
+              value: '"caller-rpm"'
+            - key: caller
+              value: jwt.sub
+        - type: tokens
+          cost: >-
+            int(llm.inputTokens)
+            - (has(llm.cachedInputTokens) ? int(llm.cachedInputTokens) : 0)
+            + int(llm.outputTokens) * (llm.requestModel.contains("sonnet") ? 10 : 5)
+          entries:
+            - key: limit
+              value: '"caller-tpm"'
+            - key: caller
+              value: jwt.sub
+            - key: model
+              value: llm.requestModel
+
     guardrails:
       request:
         - regex:

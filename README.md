@@ -64,12 +64,13 @@ re-run it and restart the gateway (`down`, then `up`) when Bedrock starts return
 ```text
 ./gateway.sh creds [aws-profile]     Write short-lived AWS credentials to .env.aws
 ./gateway.sh list                    List gateways and their local URLs
+./gateway.sh token [sub] [aud]       Mint a JWT from the local dev issuer (started with agentgateway)
 ./gateway.sh <gateway> up            Start the gateway, the OTel collector and dependencies
 ./gateway.sh <gateway> down          Stop and remove containers and volumes
 ./gateway.sh <gateway> logs          Follow logs
 ./gateway.sh <gateway> ps            Container status
 ./gateway.sh <gateway> config        Render the resolved compose file (no containers started)
-./gateway.sh <gateway> smoke         Streaming, input canary and output canary checks
+./gateway.sh <gateway> smoke         Auth rejections (agentgateway), streaming, input and output canary
 ./gateway.sh <gateway> ratelimit     Rate-limit check (skipped where no limited key exists yet)
 ```
 
@@ -83,6 +84,7 @@ guardrail. If the model refuses to echo it, the script says so instead of report
 gateway.sh                    start/stop/smoke-test script
 .env.example                  settings shared by every gateway
 shared/otel-collector/        OTLP collector (gRPC 4317, HTTP 4318) that logs spans and forwards to Honeycomb
+shared/dev-issuer/            local RS256 JWT issuer + JWKS (port 7980), standing in for an internal auth service
 <gateway>/
   README.md                   what's configured, how each proof is wired, known gaps
   compose.yaml                the gateway plus its dependencies; includes the shared collector
@@ -98,11 +100,12 @@ shared/otel-collector/        OTLP collector (gRPC 4317, HTTP 4318) that logs sp
 | Bifrost | configured | plugin written, not built yet | configured (virtual key + `rate_limits`) | configured |
 | Agent Router | configured | not configured yet (ExtProc) | not configured yet | configured |
 | Portkey | configured | per-request header config | not available in OSS 1.x | to verify |
-| agentgateway | configured | configured (regex guard) | configured (remote rate-limit server) | configured |
+| agentgateway | verified | verified (regex guard) | verified (requests and Bedrock-quota tokens, per model and per JWT caller) | configured |
 
 "Configured" means the config is written and passes validation (compose rendering, plus the published
-JSON schema for Bifrost and agentgateway). It has not been run against Bedrock yet. Each gateway's
-README lists its open questions.
+JSON schema for Bifrost and agentgateway). "Verified" means `smoke` and `ratelimit` pass against
+Bedrock. agentgateway also requires a JWT (see its README). Each gateway's README lists its open
+questions.
 
 ## Out of scope here
 

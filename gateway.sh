@@ -10,6 +10,7 @@ usage() {
 Usage:
   ./gateway.sh creds [aws-profile]        Write short-lived AWS credentials to .env.aws
   ./gateway.sh list                       List gateways and their local URLs
+  ./gateway.sh token [sub] [aud]          Mint a JWT from the local dev issuer (agentgateway up first)
   ./gateway.sh <gateway> <command>
 
 Gateways: ${GATEWAYS[*]}
@@ -20,8 +21,9 @@ Commands:
   logs        Follow the gateway logs
   ps          Show container status
   config      Render the resolved docker compose config (no containers started)
-  smoke       Streaming request, input canary and output canary checks
-  ratelimit   Send 4 requests with the 3-requests-per-minute key; expect the 4th to get 429
+  smoke       Auth rejections (if configured), streaming, input canary and output canary checks
+  ratelimit   Send 4 requests as the 3-requests-per-minute caller; expect the 4th to get 429
+              (agentgateway also checks a per-caller token budget)
 EOF
 }
 
@@ -46,6 +48,18 @@ compose() {
 load_smoke_env() {
   # shellcheck disable=SC1090
   source "$ROOT/$1/smoke.env"
+}
+
+smoke_url() {
+  grep -o 'http://localhost:[0-9]*' "$ROOT/$1/smoke.env" | head -1
+}
+
+# mint_token <sub> [aud]; prints a JWT from the dev issuer in shared/dev-issuer.
+mint_token() {
+  local sub=$1 aud=${2:-ai-llm-gateway} out
+  out=$(curl -fsS -X POST http://localhost:7980/mint \
+    -d "{\"sub\":\"$sub\",\"aud\":\"$aud\"}") || die "dev issuer not reachable on :7980 (run: ./gateway.sh agentgateway up)"
+  /usr/bin/env python3 -c 'import json,sys; print(json.load(sys.stdin)["jwt"])' <<<"$out"
 }
 
 # post <header-array-name> <json-body> [curl args...]; sets BODY and CODE.
@@ -76,6 +90,16 @@ smoke() {
   load_smoke_env "$gw"
   FAILED=0
   echo "Smoke testing $gw at $SMOKE_URL with model $SMOKE_MODEL"
+
+  local case label header
+  for case in "${AUTH_REJECT_CASES[@]}"; do
+    label=${case%%|*} header=${case#*|}
+    # shellcheck disable=SC2034
+    local -a REJECT_HEADERS=()
+    [[ -n $header ]] && REJECT_HEADERS=(-H "$header")
+    post REJECT_HEADERS "$(chat_body "Say ok." false 1)"
+    result "$([[ $CODE == 401 || $CODE == 403 ]] && echo 1)" "auth rejected: $label" "HTTP $CODE"
+  done
 
   post SMOKE_HEADERS "$(chat_body "Count from 1 to 5, one number per line." true 64)" -N
   local chunks
@@ -111,6 +135,17 @@ ratelimit() {
     codes+=("$CODE")
   done
   result "$([[ ${codes[3]} == 429 ]] && echo 1)" "4th request rate limited" "HTTP ${codes[*]}"
+
+  if [[ ${#TOKEN_RATELIMIT_HEADERS[@]} -gt 0 ]]; then
+    # 20 forced output tokens cost more than the caller's budget, so the 2nd request is refused.
+    codes=()
+    for _ in 1 2; do
+      post TOKEN_RATELIMIT_HEADERS "$(chat_body "Count from 1 to 100, separated by spaces." false 20)"
+      codes+=("$CODE")
+    done
+    result "$([[ ${codes[0]} == 200 && ${codes[1]} == 429 ]] && echo 1)" \
+      "token budget exhausted after 1st request" "HTTP ${codes[*]}"
+  fi
   return "$FAILED"
 }
 
@@ -125,7 +160,7 @@ creds() {
 list() {
   local gw
   for gw in "${GATEWAYS[@]}"; do
-    printf '%-14s %s\n' "$gw" "$(grep -o 'http://localhost:[0-9]*' "$ROOT/$gw/smoke.env" | head -1)"
+    printf '%-14s %s\n' "$gw" "$(smoke_url "$gw")"
   done
 }
 
@@ -134,6 +169,7 @@ main() {
     "" | -h | --help | help) usage; return ;;
     creds) shift; creds "$@"; return ;;
     list) list; return ;;
+    token) shift; mint_token "${1:-poc}" "${2:-}"; return ;;
   esac
 
   local gw=$1 cmd=${2:-}
@@ -144,8 +180,7 @@ main() {
     up)
       compose "$gw" up -d
       if [[ -x "$ROOT/$gw/init.sh" ]]; then "$ROOT/$gw/init.sh"; fi
-      load_smoke_env "$gw"
-      echo "$gw is up: $SMOKE_URL"
+      echo "$gw is up: $(smoke_url "$gw")"
       ;;
     down) compose "$gw" down -v ;;
     logs) compose "$gw" logs -f ;;

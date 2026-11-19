@@ -1,0 +1,23 @@
+services:
+  dev-issuer:
+    image: ghcr.io/astral-sh/uv:0.9-python3.13-bookworm-slim
+    command:
+      - uv
+      - run
+      - --no-project
+      - --with
+      - pyjwt[crypto]==2.15.1
+      - python
+      - /app/issuer.py
+    volumes:
+      - ./issuer.py:/app/issuer.py:ro
+      # Signing key persists here so restarts don't invalidate the gateway's cached JWKS.
+      - ./data:/data
+    ports:
+      - "7980:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
