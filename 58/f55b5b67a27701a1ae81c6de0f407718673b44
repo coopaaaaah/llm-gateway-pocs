@@ -1,0 +1,51 @@
+shared/dev-issuer/compose.yaml
+  s_2273f89fe7c0f0::t_891ec6d31f1891 1-23
+agentgateway/compose.yaml
+  s_2273f89fe7c0f0::t_bdb37010e21558 3
+  s_2273f89fe7c0f0::t_4fe3e26b0a87b7 20-25
+agentgateway/smoke.env
+  s_2273f89fe7c0f0::t_93c0bcdf363db7 6
+  s_2273f89fe7c0f0::t_884b4e82271b12 1,4-5,7-12
+README.md
+  s_2273f89fe7c0f0::t_e593b4c2580090 73
+  s_2273f89fe7c0f0::t_c3e67384c1f602 67
+  s_2273f89fe7c0f0::t_3ce9cd574e1bab 103,106-108
+  s_2273f89fe7c0f0::t_251f2f9ae7769c 87
+agentgateway/config.yaml
+  s_2273f89fe7c0f0::t_9fed8e5aaae3b0 36-38
+  s_2273f89fe7c0f0::t_5e8246f1315d40 39-42,54-57
+  s_2273f89fe7c0f0::t_429c72a9431f9b 2,11,13-23,27,30-35,43-53,58-65
+shared/dev-issuer/issuer.py
+  s_2273f89fe7c0f0::t_8eae3ff2831bc9 1-87
+gateway.sh
+  s_2273f89fe7c0f0::t_068abc8751cde1 53-64
+  s_2273f89fe7c0f0::t_78bc196df3ae0c 13
+  s_2273f89fe7c0f0::t_9b47fc4d14efe5 163
+  s_2273f89fe7c0f0::t_91794b73a9670c 172
+  s_2273f89fe7c0f0::t_568872f227437a 24-25
+  s_2273f89fe7c0f0::t_eaa9b84fd9b6ce 26
+  s_2273f89fe7c0f0::t_8a7aafbf94ca63 138-148
+  s_2273f89fe7c0f0::t_6b9f3f0f58f9d6 183
+  s_2273f89fe7c0f0::t_e7b8e1e0e22842 94-103
+agentgateway/ratelimit/config.yaml
+  s_2273f89fe7c0f0::t_76be6b00a7c33c 1-7,10-29,32-34,41-57
+  s_2273f89fe7c0f0::t_f32bb4e0e2ddc3 30-31,35-40
+agentgateway/README.md
+  s_2273f89fe7c0f0::t_65538ba1baf847 8,11-16,19-20,28,31-77,79,81-88,92,95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "58f55b5b67a27701a1ae81c6de0f407718673b44",
+  "prompts": {},
+  "sessions": {
+    "s_2273f89fe7c0f0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f634768b-aa61-4d55-949b-36eed786d682",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "David Cooper <cooper@unit21.ai>"
+    }
+  }
+}
